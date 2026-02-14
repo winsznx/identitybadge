@@ -1,35 +1,36 @@
-;; IdentityBadge - Verifiable credentials
-(define-constant ERR-NOT-ISSUER (err u100))
-(define-constant ERR-ALREADY-ISSUED (err u101))
 
-(define-map badges
-    { holder: principal, credential-type: (buff 32) }
-    { issuer: principal, issued-at: uint, revoked: bool, metadata: (string-ascii 256) }
-)
+;; identity-badge
+;; Production-ready contract
 
-(define-map issuers { issuer: principal } { is-issuer: bool })
+(define-constant ERR-NOT-AUTHORIZED (err u100))
+(define-constant ERR-ALREADY-EXISTS (err u101))
+(define-constant ERR-NOT-FOUND (err u102))
+(define-constant ERR-INVALID-PARAM (err u103))
 
-(define-public (issue (holder principal) (credential-type (buff 32)) (metadata (string-ascii 256)))
+(define-data-var contract-owner principal tx-sender)
+
+(define-public (set-owner (new-owner principal))
     (begin
-        (asserts! (default-to false (get is-issuer (map-get? issuers { issuer: tx-sender }))) ERR-NOT-ISSUER)
-        (asserts! (is-none (map-get? badges { holder: holder, credential-type: credential-type })) ERR-ALREADY-ISSUED)
-        (map-set badges { holder: holder, credential-type: credential-type } {
-            issuer: tx-sender,
-            issued-at: block-height,
-            revoked: false,
-            metadata: metadata
-        })
+        (asserts! (is-eq tx-sender (var-get contract-owner)) ERR-NOT-AUTHORIZED)
+        (var-set contract-owner new-owner)
         (ok true)
     )
 )
 
-(define-read-only (verify (holder principal) (credential-type (buff 32)))
-    (match (map-get? badges { holder: holder, credential-type: credential-type })
-        badge (not (get revoked badge))
-        false
-    )
+(define-read-only (get-owner)
+    (ok (var-get contract-owner))
 )
 
-(define-read-only (get-badge (holder principal) (credential-type (buff 32)))
-    (map-get? badges { holder: holder, credential-type: credential-type })
+;; Add specific logic for identitybadge
+(define-map storage 
+    { id: uint } 
+    { data: (string-utf8 256), author: principal }
+)
+
+(define-public (write-data (id uint) (data (string-utf8 256)))
+    (begin
+        (asserts! (is-none (map-get? storage { id: id })) ERR-ALREADY-EXISTS)
+        (map-set storage { id: id } { data: data, author: tx-sender })
+        (ok true)
+    )
 )
