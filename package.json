@@ -1,8 +1,8 @@
 {
-  "name": "chainregistry",
+  "name": "identitybadge",
   "version": "1.0.0",
   "private": true,
-  "description": "Decentralized username/domain registry with ownership transfer on Base and Stacks",
+  "description": "Verifiable credentials system with issuer registry on Base and Stacks blockchains.",
   "scripts": {
     "dev": "pnpm --filter web dev",
     "build": "pnpm --filter web build",
